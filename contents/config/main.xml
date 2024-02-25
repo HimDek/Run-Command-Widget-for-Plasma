@@ -7,20 +7,16 @@
 
   <group name="General">
     <entry name="icon" type="String">
-      <label>The name of the icon used in the compact representation (e.g. on a small panel).</label>
+      <label>Icon</label>
       <default>new-command-alarm</default>
+    </entry>
+    <entry name="menuLabel" type="string">
+      <label>Text label</label>
+      <default></default>
     </entry>
     <entry name="command" type="String">
       <label>Command to execute</label>
-      <default>notify-send -a "Run Command Widget" -i "new-command-alarm" "The default command of Run Command Widget sends this notification. Right click the widget and click 'Configure Run' to change the command"</default>
-    </entry>
-    <entry name="label" type="String">
-      <label>Label</label>
-      <default>️Default notification</default>
-    </entry>
-    <entry name="show" type="Int">
-        <label>Whether to show Icon, Label or Both: 0 = Icon, 1 = Label, 2 = Both</label>
-        <default>0</default>
+      <default>konsole</default>
     </entry>
   </group>
 </kcfg>

@@ -7,18 +7,22 @@
 */
 
 import QtQuick 2.15
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.5
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.kquickcontrolsaddons 2.0 as KQuickAddons
-import org.kde.kirigami 2.5 as Kirigami
+import org.kde.plasma.plasmoid 2.0
+import org.kde.plasma.core as PlasmaCore
+import org.kde.kirigami 2.20 as Kirigami
+import org.kde.iconthemes as KIconThemes
+import org.kde.config as KConfig
+import org.kde.ksvg 1.0 as KSvg
+import org.kde.kcmutils as KCM
 
-ColumnLayout {
+KCM.SimpleKCM {
 
-    property string cfg_icon: plasmoid.configuration.icon
-    property alias cfg_command: command.text
-    property alias cfg_label: label.text
-    property int cfg_show: plasmoid.configuration.show
+    property string cfg_menuLabel: menuLabel.text
+    property string cfg_command: command.text
+    property string cfg_icon: Plasmoid.configuration.icon
+    property string def_icon: "new-command-alarm"
 
     Kirigami.FormLayout {
         Button {
@@ -26,27 +30,36 @@ ColumnLayout {
 
             Kirigami.FormData.label: i18n("Icon:")
 
-            implicitWidth: previewFrame.width + PlasmaCore.Units.smallSpacing * 2
-            implicitHeight: previewFrame.height + PlasmaCore.Units.smallSpacing * 2
+            implicitWidth: previewFrame.width + Kirigami.Units.smallSpacing * 2
+            implicitHeight: previewFrame.height + Kirigami.Units.smallSpacing * 2
+            hoverEnabled: true
 
-            KQuickAddons.IconDialog {
+            Accessible.name: i18nc("@action:button", "Change Overview Button's icon")
+            Accessible.description: i18nc("@info:whatsthis", "Current icon is %1. Click to open menu to change the current icon or reset to the default icon.", cfg_icon)
+            Accessible.role: Accessible.ButtonMenu
+
+            ToolTip.delay: Kirigami.Units.toolTipDelay
+            ToolTip.text: i18nc("@info:tooltip", "Icon name is \"%1\"", cfg_icon)
+            ToolTip.visible: iconButton.hovered && cfg_icon.length > 0
+
+            KIconThemes.IconDialog {
                 id: iconDialog
-                onIconNameChanged: cfg_icon = iconName || "new-command-alarm"
+                onIconNameChanged: cfg_icon = iconName || def_icon
             }
 
             onPressed: iconMenu.opened ? iconMenu.close() : iconMenu.open()
 
-            PlasmaCore.FrameSvgItem {
+            KSvg.FrameSvgItem {
                 id: previewFrame
                 anchors.centerIn: parent
-                imagePath: plasmoid.location === PlasmaCore.Types.Vertical || plasmoid.location === PlasmaCore.Types.Horizontal
+                imagePath: Plasmoid.formFactor === PlasmaCore.Types.Vertical || Plasmoid.formFactor === PlasmaCore.Types.Horizontal
                         ? "widgets/panel-background" : "widgets/background"
-                width: PlasmaCore.Units.iconSizes.large + fixedMargins.left + fixedMargins.right
-                height: PlasmaCore.Units.iconSizes.large + fixedMargins.top + fixedMargins.bottom
+                width: Kirigami.Units.iconSizes.large + fixedMargins.left + fixedMargins.right
+                height: Kirigami.Units.iconSizes.large + fixedMargins.top + fixedMargins.bottom
 
-                PlasmaCore.IconItem {
+                Kirigami.Icon {
                     anchors.centerIn: parent
-                    width: PlasmaCore.Units.iconSizes.large
+                    width: Kirigami.Units.iconSizes.large
                     height: width
                     source: cfg_icon
                 }
@@ -61,76 +74,83 @@ ColumnLayout {
                 MenuItem {
                     text: i18nc("@item:inmenu Open icon chooser dialog", "Choose…")
                     icon.name: "document-open-folder"
+                    Accessible.description: i18nc("@info:whatsthis", "Choose an icon for Application Launcher")
                     onClicked: iconDialog.open()
                 }
                 MenuItem {
-                    text: i18nc("@item:inmenu Reset icon to default", "Clear Icon")
+                    text: i18nc("@item:inmenu Reset icon to default", "Reset to default icon")
                     icon.name: "edit-clear"
-                    onClicked: cfg_icon = "new-command-alarm"
+                    enabled: cfg_icon !== def_icon
+                    onClicked: cfg_icon = def_icon
+                }
+                MenuItem {
+                    text: i18nc("@action:inmenu", "Remove icon")
+                    icon.name: "delete"
+                    enabled: cfg_icon !== "" && menuLabel.text && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
+                    onClicked: cfg_icon = ""
                 }
             }
         }
 
-        RowLayout {
+        Kirigami.ActionTextField {
+            id: command
+            enabled: Plasmoid.formFactor !== PlasmaCore.Types.Vertical
+            Kirigami.FormData.label: i18nc("@label:textbox", "Command:")
+            text: Plasmoid.configuration.command
+            placeholderText: i18nc("@info:placeholder", "Type the command to execute")
+            onTextEdited: {
+                cfg_command = command.text
+            }
+            rightActions: [
+                Action {
+                    icon.name: "edit-clear"
+                    enabled: command.text !== ""
+                    text: i18nc("@action:button", "Reset menu label")
+                    onTriggered: {
+                        command.clear()
+                        cfg_command = ''
+                    }
+                }
+            ]
+        }
+
+        Kirigami.ActionTextField {
+            id: menuLabel
+            enabled: Plasmoid.formFactor !== PlasmaCore.Types.Vertical
+            Kirigami.FormData.label: i18nc("@label:textbox", "Text label:")
+            text: Plasmoid.configuration.menuLabel
+            placeholderText: i18nc("@info:placeholder", "Type here to add a text label")
+            onTextEdited: {
+                cfg_menuLabel = menuLabel.text
+
+                // This is to make sure that we always have a icon if there is no text.
+                // If the user remove the icon and remove the text, without this, we'll have no icon and no text.
+                // This is to force the icon to be there.
+                if (!menuLabel.text) {
+                    cfg_icon = cfg_icon || def_icon
+                }
+            }
+            rightActions: [
+                Action {
+                    icon.name: "edit-clear"
+                    enabled: menuLabel.text !== ""
+                    text: i18nc("@action:button", "Reset menu label")
+                    onTriggered: {
+                        menuLabel.clear()
+                        cfg_menuLabel = ''
+                        cfg_icon = cfg_icon || def_icon
+                    }
+                }
+            ]
+        }
+
+        Label {
             Layout.fillWidth: true
-
-            Kirigami.FormData.label: i18n("Label:")
-
-            TextField{
-                id: label
-            }
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 25
+            visible: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+            text: i18nc("@info", "A text label cannot be set when the Panel is vertical.")
+            wrapMode: Text.Wrap
+            font: Kirigami.Theme.smallFont
         }
-
-        RadioButton {
-            id: showIcon
-            Kirigami.FormData.label: i18n("Show:")
-            text: i18nc("Part of a sentence: 'Show icon only'", "Icon")
-            ButtonGroup.group: showGroup
-            property int index: 0
-            checked: plasmoid.configuration.show == index
-        }
-
-        RadioButton {
-            id: showLabel
-            text: i18nc("Part of a sentence: 'Show label only'", "Label")
-            ButtonGroup.group: showGroup
-            property int index: 1
-            checked: plasmoid.configuration.show == index
-        }
-
-        RadioButton {
-            id: showBoth
-            text: i18nc("Part of a sentence: 'Show both icon and label'", "Both")
-            ButtonGroup.group: showGroup
-            property int index: 2
-            checked: plasmoid.configuration.show == index
-        }
-
-        Item {
-            Kirigami.FormData.isSection: true
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-
-            Kirigami.FormData.label: i18n("Command:")
-
-            TextField{
-                id: command
-            }
-        }
-    }
-
-    ButtonGroup {
-        id: showGroup
-        onCheckedButtonChanged: {
-            if (checkedButton) {
-                cfg_show = checkedButton.index
-            }
-        }
-    }
-
-    Item {
-        Layout.fillHeight: true
     }
 }
