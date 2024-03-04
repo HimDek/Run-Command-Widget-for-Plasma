@@ -94,7 +94,6 @@ KCM.SimpleKCM {
 
         Kirigami.ActionTextField {
             id: command
-            enabled: Plasmoid.formFactor !== PlasmaCore.Types.Vertical
             Kirigami.FormData.label: i18nc("@label:textbox", "Command:")
             text: Plasmoid.configuration.command
             placeholderText: i18nc("@info:placeholder", "Type the command to execute")
