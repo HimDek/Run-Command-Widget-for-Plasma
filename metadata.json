@@ -14,7 +14,7 @@
         "EnabledByDefault": true,
         "License": "GPL-3.0-or-later",
         "Name": "Run Command",
-        "Version": 1.1,
+        "Version": 1.2,
         "BugReportUrl": "https://github.com/HimDek/Run-Command-Widget-for-Plasma/issues/new",
         "Website": "https://himdek.com/Run-Command-Widget-for-Plasma/"
     },
